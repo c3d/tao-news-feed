@@ -1,0 +1,38 @@
+// ****************************************************************************
+//  news_feed.xl                                              Tao project
+// ****************************************************************************
+// 
+//   File Description:
+// 
+//    Create news feed
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// ****************************************************************************
+// This document is released under the GNU General Public License.
+// See http://www.gnu.org/copyleft/gpl.html and Matthew 25:22 for details
+//  (C) 2011 Christophe de Dinechin <christophe@taodyne.com>
+//  (C) 2011 JÃ©rÃ´me Forissier <jerome@taodyne.com>
+//  (C) 2011 Catherine Burvelle <cathy@taodyne.com>
+//  (C) 2011 Taodyne SAS
+// ****************************************************************************
+
+module_description
+    id "78db67d0-1ad4-11e2-892e-0800200c9a66"
+    name "News Feed"
+    description "Add news feed into your presentations"
+    import_name "NewsFeed"
+    author "Taodyne SAS"
+    website "http://www.taodyne.com"
+    version 1.0
+
+module_description "fr",
+    name "Flux d'actualités"
+    description "Permet d'ajouter un flux d'activité dans vos présentations."
+
+import "news_feed2.xl.crypt"

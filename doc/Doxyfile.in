@@ -1,0 +1,5 @@
+@INCLUDE = ../../Doxyfile
+PROJECT_NAME = \"News Feed \"
+PROJECT_NUMBER = 1.0
+QHP_NAMESPACE = com.taodyne.TaoPresentations.modules.NewsFeed.1.0
+QHP_VIRTUAL_FOLDER = NewsFeed

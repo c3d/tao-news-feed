@@ -1,0 +1,111 @@
+// ****************************************************************************
+//  news_feed2.xl                                                   Tao project
+// ****************************************************************************
+// 
+//   File Description:
+// 
+//    Implement News Feed.
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// ****************************************************************************
+// This document is released under the GNU General Public License.
+// See http://www.gnu.org/copyleft/gpl.html and Matthew 25:22 for details
+//  (C) 2011 Christophe de Dinechin <christophe@taodyne.com>
+//  (C) 2011 Jérôme Forissier <jerome@taodyne.com>
+//  (C) 2011 Catherine Burvelle <cathy@taodyne.com>
+//  (C) 2011 Taodyne SAS
+// ****************************************************************************
+
+import RegExp
+import NetworkAccess
+
+// ============================================================================
+//
+//   Theme definition
+//
+// ============================================================================
+
+
+// ============================================================================
+//
+//   New feed definition
+//
+// ============================================================================
+
+FEED_URL -> ""
+FEED_THEME -> ""
+
+news_feed_url url:text ->
+// ----------------------------------------------------------------------------
+//     Change news feed url
+// ----------------------------------------------------------------------------
+    FEED_URL := url
+
+
+news_feed_url url1:text, url2:text, x:integer ->
+// ----------------------------------------------------------------------------
+//     Swap between news feed url 1 and 2 every x minutes
+// ----------------------------------------------------------------------------
+    if minutes mod x = 0 then
+        FEED_URL := url1
+    else
+        FEED_URL := url2
+
+
+news_feed Theme:text ->
+// ----------------------------------------------------------------------------
+//     Show a type of news feed
+// ----------------------------------------------------------------------------
+    FEED_THEME := Theme
+    feed_background FEED_THEME
+    process_feed (get_url_text FEED_URL)
+
+
+process_feed T:text ->
+// ----------------------------------------------------------------------------
+//     Process news feed
+// ----------------------------------------------------------------------------
+    // Refresh every second until we get news feed, then every minute
+    if T = "" then refresh 1 else refresh 60
+
+    regexp_parse_all T,
+        -"<title>Top Stories.*</title>" -> draw_feed FEED_THEME, "top_stories"
+        -"<item.*<title>(.*)</title>" -> draw_feed FEED_THEME, "title"
+        -"<copyright>(.*)</copyright>" -> draw_feed FEED_THEME, "copyright"
+        -"<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" -> draw_feed FEED_THEME, "pubDate"
+        -"<category>(.*)</category>" -> draw_feed FEED_THEME, "category"
+        - "img src=&quot;(.*.jpg)&quot;" -> draw_feed FEED_THEME, "image"
+
+
+
+feed_text -> translate_html regexp_captured 1
+// ----------------------------------------------------------------------------
+//     Get text of a news
+// ----------------------------------------------------------------------------
+
+
+feed_picture_url -> "http:" & regexp_captured 1
+// ----------------------------------------------------------------------------
+//     Get image url of a news
+// ----------------------------------------------------------------------------
+
+
+translate_html T:text ->
+// ----------------------------------------------------------------------------
+//    Partial translation of HTML
+// ----------------------------------------------------------------------------
+    regexp_parse_text T,
+        "[^&]+"                     -> regexp_captured 0
+        "&quot;"                    -> """"
+        "&apos;"                    -> "'"
+        "&amp;copy;"                -> unicode_char "xa9"
+        "&amp;amp;"                 -> "&"
+        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1
+        "&(.*);"                    -> "&" & regexp_captured 1 & ";"
+
