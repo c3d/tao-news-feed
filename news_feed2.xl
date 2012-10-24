@@ -34,78 +34,134 @@ import NetworkAccess
 
 // ============================================================================
 //
-//   New feed definition
+//   News feed definition
 //
 // ============================================================================
 
-FEED_URL -> ""
-FEED_THEME -> ""
-
-news_feed_url url:text ->
-// ----------------------------------------------------------------------------
-//     Change news feed url
-// ----------------------------------------------------------------------------
-    FEED_URL := url
-
-
-news_feed_url url1:text, url2:text, x:integer ->
-// ----------------------------------------------------------------------------
-//     Swap between news feed url 1 and 2 every x minutes
-// ----------------------------------------------------------------------------
-    if minutes mod x = 0 then
-        FEED_URL := url1
-    else
-        FEED_URL := url2
+newsfeed_index          -> 0 
+newsfeed_count          -> 1
+newsfeed_copyright      -> "" 
+data newsfeed_title
+data newsfeed_date
+data newsfeed_category
+data newsfeed_picture
 
 
-news_feed Theme:text ->
+newsfeed_horizontal_display X:real,Y:real,W:real,H:real,DX:real,SX:real,Body ->
 // ----------------------------------------------------------------------------
-//     Show a type of news feed
+//    Display a feed in the given box
 // ----------------------------------------------------------------------------
-    FEED_THEME := Theme
-    feed_background FEED_THEME
-    process_feed (get_url_text FEED_URL)
+    locally
+        newsfeed_horizontal_texture W, H, DX, time * SX,
+            color "white"
+            Body
+        rectangle X, Y, W, H
 
 
-process_feed T:text ->
+newsfeed_vertical_display X:real,Y:real,W:real,H:real,DY:real,SY:real,Body ->
 // ----------------------------------------------------------------------------
-//     Process news feed
+//    Display a feed in the given box
+// ----------------------------------------------------------------------------
+    locally
+        newsfeed_vertical_texture W, H, DY, time * SY,
+            color "white"
+            Body
+        rectangle X, Y, W, H
+
+
+newsfeed_horizontal_texture W:real, H:real, DX:real, OX:real, Body ->
+// ----------------------------------------------------------------------------
+//   Draw the input horizontally
+// ----------------------------------------------------------------------------
+    frame_texture W, H,
+        translatex W - OX mod (DX + 2*W)
+        if newsfeed_count > 0 then
+            newsfeed_index := integer(OX / (DX + 2*W)) mod newsfeed_count + 1
+            Body
+
+
+newsfeed_vertical_texture W:real, H:real, DY:real, OY:real, Body ->
+// ----------------------------------------------------------------------------
+//   Draw the input horizontally
+// ----------------------------------------------------------------------------
+    frame_texture W, H,
+        translatey H + OY mod (DY + 2*H)
+        if newsfeed_count > 0 then
+            newsfeed_index := integer(OY / (DY + 2*H)) mod newsfeed_count + 1
+            Body
+
+
+newsfeed_draw_ticker X:real, Y:real, W:real, H:real, DX:real, SX:real ->
+// ----------------------------------------------------------------------------
+//   Draw the information horizontally
+// ----------------------------------------------------------------------------
+    newsfeed_horizontal_display X, Y, W, H, DX, SX,
+        if newsfeed_is_text newsfeed_title[newsfeed_index] then
+            text newsfeed_title[newsfeed_index]
+            text "  "
+        if newsfeed_is_text newsfeed_category[newsfeed_index] then
+            color "red"
+            text newsfeed_category[newsfeed_index]
+            text "  "
+        if newsfeed_is_text newsfeed_date[newsfeed_index] then
+            color "green"
+            text newsfeed_date[newsfeed_index]
+
+
+newsfeed_record_url U:text ->
+// ----------------------------------------------------------------------------
+//    Record the newsfeed at given URL
+// ----------------------------------------------------------------------------
+    newsfeed_record get_url_text U
+
+
+newsfeed_record T:text -> 
+// ----------------------------------------------------------------------------
+//    Record a news feed from a given source
 // ----------------------------------------------------------------------------
     // Refresh every second until we get news feed, then every minute
-    if T = "" then refresh 1 else refresh 60
+    if T = "" then refresh 1 else refresh 60 
 
-    regexp_parse_all T,
-        -"<title>Top Stories.*</title>" -> draw_feed FEED_THEME, "top_stories"
-        -"<item.*<title>(.*)</title>" -> draw_feed FEED_THEME, "title"
-        -"<copyright>(.*)</copyright>" -> draw_feed FEED_THEME, "copyright"
-        -"<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" -> draw_feed FEED_THEME, "pubDate"
-        -"<category>(.*)</category>" -> draw_feed FEED_THEME, "category"
-        - "img src=&quot;(.*.jpg)&quot;" -> draw_feed FEED_THEME, "image"
+    newsfeed_index := 0 
+
+    regexp_parse_all T, 
+        - "<title>Top Stories.*</title>" ->
+            false 
+        - "<item.*<title>(.*)</title>" -> 
+            newsfeed_index := newsfeed_index + 1 
+            newsfeed_title [newsfeed_index] := newsfeed_html
+        - "<copyright>(.*)</copyright>" -> 
+            newsfeed_copyright := newsfeed_html
+        - "<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" -> 
+            newsfeed_date [newsfeed_index] := newsfeed_html
+        - "<category>(.*)</category>" -> 
+            newsfeed_category [newsfeed_index] := newsfeed_html
+        - "img src=&quot;(.*.jpg)&quot;" -> 
+            newsfeed_picture [newsfeed_index] := "http:" & regexp_captured 1 
+    newsfeed_count := newsfeed_index
 
 
-
-feed_text -> translate_html regexp_captured 1
+newsfeed_html ->
 // ----------------------------------------------------------------------------
-//     Get text of a news
+//   Return the HTML for the current regexp
 // ----------------------------------------------------------------------------
+   newsfeed_translate_html regexp_captured 1 
 
 
-feed_picture_url -> "http:" & regexp_captured 1
+newsfeed_translate_html T:text -> 
 // ----------------------------------------------------------------------------
-//     Get image url of a news
+//   Translate HTML into text
 // ----------------------------------------------------------------------------
+    regexp_parse_text T, 
+        "[^&]+" -> regexp_captured 0 
+        "&quot;" -> """" 
+        "&apos;" -> "'" 
+        "&amp;copy;" -> unicode_char "xa9" 
+        "&amp;amp;" -> "&" 
+        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1 
+        "&(.*);" -> "&" & regexp_captured 1 & ";" 
 
 
-translate_html T:text ->
-// ----------------------------------------------------------------------------
-//    Partial translation of HTML
-// ----------------------------------------------------------------------------
-    regexp_parse_text T,
-        "[^&]+"                     -> regexp_captured 0
-        "&quot;"                    -> """"
-        "&apos;"                    -> "'"
-        "&amp;copy;"                -> unicode_char "xa9"
-        "&amp;amp;"                 -> "&"
-        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1
-        "&(.*);"                    -> "&" & regexp_captured 1 & ";"
+newsfeed_is_text T:text -> true
+newsfeed_is_text Other  -> false
 
