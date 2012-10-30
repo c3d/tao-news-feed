@@ -153,13 +153,31 @@ newsfeed_translate_html T:text ->
 //   Translate HTML into text
 // ----------------------------------------------------------------------------
     regexp_parse_text T, 
-        "[^&]+" -> regexp_captured 0 
-        "&quot;" -> """" 
-        "&apos;" -> "'" 
-        "&amp;copy;" -> unicode_char "xa9" 
-        "&amp;amp;" -> "&" 
+        "[^&]+"                 -> regexp_captured 0 
+        "&quot;"                -> """" 
+        "&apos;"                -> "'" 
+        "&lt;"                  -> "<" 
+        "&gt;"                  -> ">"
+        "&circ;"                -> "ˆ"
+        "&tilde;"               -> "~"
+        "&euro;"                -> "€"
+        "&ndash;"               -> "–"
+        "&mdash;"               -> "—"
+        "&lsquo;"               -> "‘"
+        "&rsquo;"               -> "’"
+        "&sbquo;"               -> "‚"
+        "&ldquo;"               -> "“"
+        "&rdquo;"               -> "”"
+        "&bdquo;"               -> "„"
+        "&permil;"              -> "‰"
+        "&dagger;"              -> "†"
+        "&Dagger;"              -> "‡"
+        "&lsaquo;"              -> "‹"
+        "&rsaquo;"              -> "›"
+        "&amp;copy;"            -> unicode_char "xa9" 
+        "&amp;amp;"             -> "&" 
         "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1 
-        "&(.*);" -> "&" & regexp_captured 1 & ";" 
+        "&(.*);"                -> "&" & regexp_captured 1 & ";" 
 
 
 newsfeed_is_text T:text -> true
