@@ -31,6 +31,9 @@ INSTALLS    -= thismod_bin
 HEADERS += \
     doc/news_feed.doxy.h
 
+LICENSE_FILES = news_feed.taokey.notsigned
+include(../licenses.pri)
+
 QMAKE_SUBSTITUTES = doc/Doxyfile.in
 DOXYFILE = doc/Doxyfile
 DOXYLANG = en,fr
