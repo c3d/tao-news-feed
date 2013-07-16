@@ -25,6 +25,11 @@
 import RegExp
 import NetworkAccess
 
+// ============================================================================
+//
+//   Theme definition
+//
+// ============================================================================
 
 
 // ============================================================================
@@ -40,61 +45,6 @@ data newsfeed_title
 data newsfeed_date
 data newsfeed_category
 data newsfeed_picture
-data newsfeed_texture
-
-
-newsfeed_ticker_speed            -> 250.0
-newsfeed_ticker_speed Speed:real -> newsfeed_ticker_speed := Speed
-newsfeed_ticker_gap              -> "    "
-newsfeed_ticker_gap Gap:text     -> newsfeed_ticker_gap := Gap
-
-
-newsfeed_ticker_position        -> 0.0
-newsfeed_ticker X:real, Y:real, W:real, H:real ->
-// ----------------------------------------------------------------------------
-//    Draw a horizontal ticker with the news
-// ----------------------------------------------------------------------------
-    locally
-        if newsfeed_is_text newsfeed_title[newsfeed_index] then
-
-            frame_texture W, H,
-
-                pos -> 0.0
-                pos := newsfeed_ticker_position
-                idx -> 0
-                idx := newsfeed_index
-                tw -> 0.0
-                locally
-                    if newsfeed_is_text (newsfeed_title[idx]) then
-                        tw := text_width (newsfeed_title[idx])
-                        tw := tw + text_width newsfeed_ticker_gap
-
-                while pos < W + tw loop
-
-                    if newsfeed_is_text (newsfeed_title[idx]) then
-                        text_box pos + tw/2, 0, tw + 2, H,
-                            text newsfeed_title[idx]
-
-                    pos := pos + tw
-                    idx := (idx + 1) mod newsfeed_count
-
-                    locally
-                        if newsfeed_is_text (newsfeed_title[idx]) then
-                            tw := text_width (newsfeed_title[idx])
-                            tw := tw + text_width newsfeed_ticker_gap
-
-                locally
-                    tw0 -> 0.0
-                    tw0 := text_width (newsfeed_title[newsfeed_index])
-                    tw0 := tw0 + text_width newsfeed_ticker_gap
-                    newsfeed_ticker_position := newsfeed_ticker_position - refresh_time * newsfeed_ticker_speed
-                    if newsfeed_ticker_position < -tw0 - W/2 then
-                        newsfeed_ticker_position := newsfeed_ticker_position + tw0
-                        newsfeed_index := (newsfeed_index + 1) mod newsfeed_count
-
-            color "white"
-            rectangle X, Y, W, H
-
 
 
 newsfeed_horizontal_display X:real,Y:real,W:real,H:real,DX:real,SX:real,Body ->
