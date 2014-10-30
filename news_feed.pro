@@ -19,11 +19,7 @@ MODINSTDIR = news_feed
 
 include(../modules.pri)
 
-OTHER_FILES = news_feed.xl \
-    news_feed2.xl \
-
-CRYPT_XL_SOURCES = news_feed2.xl
-include(../crypt_xl.pri)
+OTHER_FILES = news_feed.xl
 
 INSTALLS    += thismod_icon
 INSTALLS    -= thismod_bin

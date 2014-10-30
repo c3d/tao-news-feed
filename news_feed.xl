@@ -18,7 +18,7 @@
 // in the Tao Presentations license agreement, or alternatively, in a signed
 // license agreement between you and Taodyne SAS.
 //  (C) 2011 Christophe de Dinechin <christophe@taodyne.com>
-//  (C) 2011 Jérôme Forissier <jerome@taodyne.com>
+//  (C) 2011 JÃ©rÃ´me Forissier <jerome@taodyne.com>
 //  (C) 2011 Catherine Burvelle <cathy@taodyne.com>
 //  (C) 2011 Taodyne SAS
 // ****************************************************************************
@@ -33,7 +33,219 @@ module_description
     version 1.01
 
 module_description "fr",
-    name "Flux d'actualit�s"
-    description "Permet d'ajouter un flux d'activit� dans vos pr�sentations."
+    name "Flux d'actualités"
+    description "Permet d'ajouter un flux d'activité dans vos présentations."
 
-import "news_feed2.xl.crypt"
+
+import RegExp
+import NetworkAccess
+
+
+
+// ============================================================================
+//
+//   News feed definition
+//
+// ============================================================================
+
+newsfeed_index          -> 0 
+newsfeed_count          -> 1
+newsfeed_copyright      -> "" 
+data newsfeed_title
+data newsfeed_date
+data newsfeed_category
+data newsfeed_picture
+data newsfeed_texture
+
+
+newsfeed_ticker_speed            -> 250.0
+newsfeed_ticker_speed Speed:real -> newsfeed_ticker_speed := Speed
+newsfeed_ticker_gap              -> "    "
+newsfeed_ticker_gap Gap:text     -> newsfeed_ticker_gap := Gap
+
+
+newsfeed_ticker_position        -> 0.0
+newsfeed_ticker X:real, Y:real, W:real, H:real ->
+// ----------------------------------------------------------------------------
+//    Draw a horizontal ticker with the news
+// ----------------------------------------------------------------------------
+    locally
+        if newsfeed_is_text newsfeed_title[newsfeed_index] then
+
+            frame_texture W, H,
+
+                pos -> 0.0
+                pos := newsfeed_ticker_position
+                idx -> 0
+                idx := newsfeed_index
+                tw -> 0.0
+                locally
+                    if newsfeed_is_text (newsfeed_title[idx]) then
+                        tw := text_width (newsfeed_title[idx])
+                        tw := tw + text_width newsfeed_ticker_gap
+
+                while pos < W + tw loop
+
+                    if newsfeed_is_text (newsfeed_title[idx]) then
+                        text_box pos + tw/2, 0, tw + 2, H,
+                            text newsfeed_title[idx]
+
+                    pos := pos + tw
+                    idx := (idx + 1) mod newsfeed_count
+
+                    locally
+                        if newsfeed_is_text (newsfeed_title[idx]) then
+                            tw := text_width (newsfeed_title[idx])
+                            tw := tw + text_width newsfeed_ticker_gap
+
+                locally
+                    tw0 -> 0.0
+                    tw0 := text_width (newsfeed_title[newsfeed_index])
+                    tw0 := tw0 + text_width newsfeed_ticker_gap
+                    newsfeed_ticker_position := newsfeed_ticker_position - refresh_time * newsfeed_ticker_speed
+                    if newsfeed_ticker_position < -tw0 - W/2 then
+                        newsfeed_ticker_position := newsfeed_ticker_position + tw0
+                        newsfeed_index := (newsfeed_index + 1) mod newsfeed_count
+
+            color "white"
+            rectangle X, Y, W, H
+
+
+
+newsfeed_horizontal_display X:real,Y:real,W:real,H:real,DX:real,SX:real,Body ->
+// ----------------------------------------------------------------------------
+//    Display a feed in the given box
+// ----------------------------------------------------------------------------
+    locally
+        newsfeed_horizontal_texture W, H, DX, time * SX,
+            color "white"
+            Body
+        rectangle X, Y, W, H
+
+
+newsfeed_vertical_display X:real,Y:real,W:real,H:real,DY:real,SY:real,Body ->
+// ----------------------------------------------------------------------------
+//    Display a feed in the given box
+// ----------------------------------------------------------------------------
+    locally
+        newsfeed_vertical_texture W, H, DY, time * SY,
+            color "white"
+            Body
+        rectangle X, Y, W, H
+
+
+newsfeed_horizontal_texture W:real, H:real, DX:real, OX:real, Body ->
+// ----------------------------------------------------------------------------
+//   Draw the input horizontally
+// ----------------------------------------------------------------------------
+    frame_texture W, H,
+        translatex W - OX mod (DX + 2*W)
+        if newsfeed_count > 0 then
+            newsfeed_index := integer(OX / (DX + 2*W)) mod newsfeed_count + 1
+            Body
+
+
+newsfeed_vertical_texture W:real, H:real, DY:real, OY:real, Body ->
+// ----------------------------------------------------------------------------
+//   Draw the input horizontally
+// ----------------------------------------------------------------------------
+    frame_texture W, H,
+        translatey H + OY mod (DY + 2*H)
+        if newsfeed_count > 0 then
+            newsfeed_index := integer(OY / (DY + 2*H)) mod newsfeed_count + 1
+            Body
+
+
+newsfeed_draw_ticker X:real, Y:real, W:real, H:real, DX:real, SX:real ->
+// ----------------------------------------------------------------------------
+//   Draw the information horizontally
+// ----------------------------------------------------------------------------
+    newsfeed_horizontal_display X, Y, W, H, DX, SX,
+        if newsfeed_is_text newsfeed_title[newsfeed_index] then
+            text newsfeed_title[newsfeed_index]
+            text "  "
+        if newsfeed_is_text newsfeed_category[newsfeed_index] then
+            color "red"
+            text newsfeed_category[newsfeed_index]
+            text "  "
+        if newsfeed_is_text newsfeed_date[newsfeed_index] then
+            color "green"
+            text newsfeed_date[newsfeed_index]
+
+
+newsfeed_record_url U:text ->
+// ----------------------------------------------------------------------------
+//    Record the newsfeed at given URL
+// ----------------------------------------------------------------------------
+    newsfeed_record get_url_text U
+
+
+newsfeed_record T:text -> 
+// ----------------------------------------------------------------------------
+//    Record a news feed from a given source
+// ----------------------------------------------------------------------------
+    // Refresh every second until we get news feed, then every minute
+    if T = "" then refresh 1 else refresh 60 
+
+    newsfeed_index := 0 
+
+    regexp_parse_all T, 
+        - "<title>Top Stories.*</title>" ->
+            false 
+        - "<item.*<title>(.*)</title>" -> 
+            newsfeed_index := newsfeed_index + 1 
+            newsfeed_title [newsfeed_index] := newsfeed_html
+        - "<copyright>(.*)</copyright>" -> 
+            newsfeed_copyright := newsfeed_html
+        - "<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" -> 
+            newsfeed_date [newsfeed_index] := newsfeed_html
+        - "<category>(.*)</category>" -> 
+            newsfeed_category [newsfeed_index] := newsfeed_html
+        - "img src=&quot;(.*.jpg)&quot;" -> 
+            newsfeed_picture [newsfeed_index] := "http:" & regexp_captured 1 
+    newsfeed_count := newsfeed_index
+
+
+newsfeed_html ->
+// ----------------------------------------------------------------------------
+//   Return the HTML for the current regexp
+// ----------------------------------------------------------------------------
+   newsfeed_translate_html regexp_captured 1 
+
+
+newsfeed_translate_html T:text -> 
+// ----------------------------------------------------------------------------
+//   Translate HTML into text
+// ----------------------------------------------------------------------------
+    regexp_parse_text T, 
+        "[^&]+"                 -> regexp_captured 0 
+        "&quot;"                -> """" 
+        "&apos;"                -> "'" 
+        "&lt;"                  -> "<" 
+        "&gt;"                  -> ">"
+        "&circ;"                -> "ˆ"
+        "&tilde;"               -> "~"
+        "&euro;"                -> "€"
+        "&ndash;"               -> "–"
+        "&mdash;"               -> "—"
+        "&lsquo;"               -> "‘"
+        "&rsquo;"               -> "’"
+        "&sbquo;"               -> "‚"
+        "&ldquo;"               -> "“"
+        "&rdquo;"               -> "”"
+        "&bdquo;"               -> "„"
+        "&permil;"              -> "‰"
+        "&dagger;"              -> "†"
+        "&Dagger;"              -> "‡"
+        "&lsaquo;"              -> "‹"
+        "&rsaquo;"              -> "›"
+        "&amp;copy;"            -> unicode_char "xa9" 
+        "&amp;amp;"             -> "&" 
+        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1 
+        "&(.*);"                -> "&" & regexp_captured 1 & ";" 
+
+
+newsfeed_is_text T:text -> true
+newsfeed_is_text Other  -> false
+
+
