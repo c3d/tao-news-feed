@@ -1,26 +1,41 @@
-// ****************************************************************************
-//  news_feed.xl                                              Tao project
-// ****************************************************************************
-// 
-//   File Description:
-// 
+// *****************************************************************************
+// news_feed.xl                                                    Tao3D project
+// *****************************************************************************
+//
+// File description:
+//
 //    Create news feed
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// ****************************************************************************
+//
+//
+//
+//
+//
+//
+//
+//
+// *****************************************************************************
 // This software is licensed under the GNU General Public License v3
-// See file COPYING for details.
-//  (C) 2011 Christophe de Dinechin <christophe@taodyne.com>
-//  (C) 2011 JÃ©rÃ´me Forissier <jerome@taodyne.com>
-//  (C) 2011 Catherine Burvelle <cathy@taodyne.com>
-//  (C) 2011 Taodyne SAS
-// ****************************************************************************
+// (C) 2012-2013, Baptiste Soulisse <baptiste.soulisse@taodyne.com>
+// (C) 2013, Catherine Burvelle <catherine@taodyne.com>
+// (C) 2012-2014,2019, Christophe de Dinechin <christophe@dinechin.org>
+// (C) 2012-2013, Jérôme Forissier <jerome@taodyne.com>
+// *****************************************************************************
+// This file is part of Tao3D
+//
+// Tao3D is free software: you can r redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tao3D is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Tao3D, in a file named COPYING.
+// If not, see <https://www.gnu.org/licenses/>.
+// *****************************************************************************
 
 module_description
     id "78db67d0-1ad4-11e2-892e-0800200c9a66"
@@ -47,9 +62,9 @@ import NetworkAccess
 //
 // ============================================================================
 
-newsfeed_index          -> 0 
+newsfeed_index          -> 0
 newsfeed_count          -> 1
-newsfeed_copyright      -> "" 
+newsfeed_copyright      -> ""
 data newsfeed_title
 data newsfeed_date
 data newsfeed_category
@@ -179,29 +194,29 @@ newsfeed_record_url U:text ->
     newsfeed_record get_url_text U
 
 
-newsfeed_record T:text -> 
+newsfeed_record T:text ->
 // ----------------------------------------------------------------------------
 //    Record a news feed from a given source
 // ----------------------------------------------------------------------------
     // Refresh every second until we get news feed, then every minute
-    if T = "" then refresh 1 else refresh 60 
+    if T = "" then refresh 1 else refresh 60
 
-    newsfeed_index := 0 
+    newsfeed_index := 0
 
-    regexp_parse_all T, 
+    regexp_parse_all T,
         - "<title>Top Stories.*</title>" ->
-            false 
-        - "<item.*<title>(.*)</title>" -> 
-            newsfeed_index := newsfeed_index + 1 
+            false
+        - "<item.*<title>(.*)</title>" ->
+            newsfeed_index := newsfeed_index + 1
             newsfeed_title [newsfeed_index] := newsfeed_html
-        - "<copyright>(.*)</copyright>" -> 
+        - "<copyright>(.*)</copyright>" ->
             newsfeed_copyright := newsfeed_html
-        - "<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" -> 
+        - "<pubDate>.*([0-9]+:[0-9]+:[0-9]+.*)</pubDate>" ->
             newsfeed_date [newsfeed_index] := newsfeed_html
-        - "<category>(.*)</category>" -> 
+        - "<category>(.*)</category>" ->
             newsfeed_category [newsfeed_index] := newsfeed_html
-        - "img src=&quot;(.*.jpg)&quot;" -> 
-            newsfeed_picture [newsfeed_index] := "http:" & regexp_captured 1 
+        - "img src=&quot;(.*.jpg)&quot;" ->
+            newsfeed_picture [newsfeed_index] := "http:" & regexp_captured 1
     newsfeed_count := newsfeed_index
 
 
@@ -209,18 +224,18 @@ newsfeed_html ->
 // ----------------------------------------------------------------------------
 //   Return the HTML for the current regexp
 // ----------------------------------------------------------------------------
-   newsfeed_translate_html regexp_captured 1 
+   newsfeed_translate_html regexp_captured 1
 
 
-newsfeed_translate_html T:text -> 
+newsfeed_translate_html T:text ->
 // ----------------------------------------------------------------------------
 //   Translate HTML into text
 // ----------------------------------------------------------------------------
-    regexp_parse_text T, 
-        "[^&]+"                 -> regexp_captured 0 
-        "&quot;"                -> """" 
-        "&apos;"                -> "'" 
-        "&lt;"                  -> "<" 
+    regexp_parse_text T,
+        "[^&]+"                 -> regexp_captured 0
+        "&quot;"                -> """"
+        "&apos;"                -> "'"
+        "&lt;"                  -> "<"
         "&gt;"                  -> ">"
         "&circ;"                -> "ˆ"
         "&tilde;"               -> "~"
@@ -238,10 +253,10 @@ newsfeed_translate_html T:text ->
         "&Dagger;"              -> "‡"
         "&lsaquo;"              -> "‹"
         "&rsaquo;"              -> "›"
-        "&amp;copy;"            -> unicode_char "xa9" 
-        "&amp;amp;"             -> "&" 
-        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1 
-        "&(.*);"                -> "&" & regexp_captured 1 & ";" 
+        "&amp;copy;"            -> unicode_char "xa9"
+        "&amp;amp;"             -> "&"
+        "&#(x[a-fA-F0-9]+|[0-9]+);" -> unicode_char regexp_captured 1
+        "&(.*);"                -> "&" & regexp_captured 1 & ";"
 
 
 newsfeed_is_text T:text -> true
